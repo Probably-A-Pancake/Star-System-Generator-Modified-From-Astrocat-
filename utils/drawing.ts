@@ -1,3 +1,4 @@
+
 import { Star, SystemData, CameraOrbit, CameraScale, RGB } from '../types';
 
 export function kelvinToRGB(kelvin: number): RGB {
@@ -124,15 +125,32 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
     ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
     ctx.beginPath(); ctx.arc(cursorX - starR_px + 20, cy, starR_px, 0, Math.PI*2); ctx.fill();
     
+    // Scale star label font slightly but keep it anchored relative to canvas
+    const starLabelY = cy + Math.min(h*0.45, starR_px + 40);
     ctx.fillStyle = "#AAA"; ctx.font = "16px Barlow"; ctx.textAlign = "left";
     ctx.fillText("STAR", 10, cy + h*0.45); ctx.fillText((star.radius.toFixed(2)) + " R☉", 10, cy + h*0.45 + 20);
 
-    cursorX += 60 * cam.zoom;
+    // Ensure a minimum gap of 50px so planets don't overlap the star slice at low zoom
+    // The star slice ends visually at (original_cursorX + 20)
+    cursorX += Math.max(50, 60 * cam.zoom);
+
+    // Calculate dynamic font settings based on zoom
+    const zoomFactor = Math.pow(cam.zoom, 0.45); // Sqrt scaling
+    const titleSize = Math.max(10, Math.min(24, 16 * zoomFactor));
+    const subSize = Math.max(8, Math.min(16, 12 * zoomFactor));
+    const gap = 15 * Math.max(0.6, Math.min(1.5, zoomFactor));
+    const lineHeight = subSize * 1.35;
 
     system.planets.forEach((pl, i) => {
         const rPx = pl.radiusKm * currentScale;
-        cursorX += rPx + 10 * cam.zoom;
-        if(i > 0) cursorX += 20 * cam.zoom;
+        
+        // Add spacing relative to planet size + zoom-based padding + minimum padding
+        cursorX += rPx + Math.max(5, 10 * cam.zoom);
+        
+        if(i > 0) {
+             // Minimum spacing between planets
+             cursorX += Math.max(10, 20 * cam.zoom);
+        }
 
         // Draw Planet Texture
         ctx.save();
@@ -169,8 +187,12 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
 
         ctx.restore();
 
-        // Labels
-        ctx.fillStyle = "#BBB"; ctx.textAlign = "center"; ctx.font = "bold 16px Barlow";
+        // Labels - Dynamic Positioning
+        const textY = cy + rPx + gap;
+
+        ctx.fillStyle = "#BBB"; 
+        ctx.textAlign = "center"; 
+        ctx.font = `bold ${Math.floor(titleSize)}px Barlow`;
         
         let label = "";
         if (i < 25) {
@@ -180,10 +202,12 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
             label = "a" + String.fromCharCode(97 + sub%26); 
         }
 
-        ctx.fillText(label, cursorX, cy + h*0.35);
-        ctx.font = "14px Barlow"; ctx.fillStyle = "#888";
-        ctx.fillText(Math.round(pl.radiusKm).toLocaleString() + " km", cursorX, cy + h*0.35 + 18);
-        ctx.fillText(pl.radius.toFixed(2) + " R⊕", cursorX, cy + h*0.35 + 34);
+        ctx.fillText(label, cursorX, textY);
+        
+        ctx.font = `${Math.floor(subSize)}px Barlow`; 
+        ctx.fillStyle = "#888";
+        ctx.fillText(Math.round(pl.radiusKm).toLocaleString() + " km", cursorX, textY + lineHeight);
+        ctx.fillText(pl.radius.toFixed(2) + " R⊕", cursorX, textY + lineHeight * 2);
 
         cursorX += rPx;
     });
