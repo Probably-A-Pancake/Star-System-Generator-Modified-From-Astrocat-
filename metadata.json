@@ -1,0 +1,5 @@
+{
+  "name": "Exo-System Architect",
+  "description": "A procedural star system generator visualizing orbits, planetary surfaces, and stellar data.",
+  "requestFramePermissions": []
+}
