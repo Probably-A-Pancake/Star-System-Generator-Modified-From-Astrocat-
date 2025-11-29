@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { generateStar, generatePlanets } from './utils/physics';
 import Visualizer from './components/Visualizer';
@@ -10,7 +11,6 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('orbit');
   const [targetClass, setTargetClass] = useState<string>('Random');
 
-  // Lifted State for Camera to allow HUD positioning in App
   const [orbitCam, setOrbitCam] = useState<CameraOrbit>({ zoom: 20, rotX: 60, rotZ: 0 });
   const [scaleCam, setScaleCam] = useState<CameraScale>({ zoom: 1.0, panX: 0 });
 
@@ -27,7 +27,6 @@ function App() {
       generateSystem(cls);
   };
 
-  // Initial Load
   useEffect(() => {
     generateSystem();
   }, []);
@@ -48,8 +47,8 @@ function App() {
       {/* Main View Area */}
       <div className="flex-1 relative flex flex-col h-[60vh] md:h-full min-h-0">
         
-        {/* Top Center Controls & HUD Container */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col gap-1 items-start">
+        {/* Top Left Controls & HUD Container */}
+        <div className="absolute top-4 left-6 z-30 flex flex-col gap-1 items-start">
             
             {/* Star Class Selector */}
             <div className="flex gap-1 bg-space-800/90 backdrop-blur p-1 rounded-lg border border-space-700 shadow-xl">
@@ -64,7 +63,7 @@ function App() {
                 ))}
             </div>
 
-            {/* HUD Info - Left Aligned to Star Picker */}
+            {/* HUD Info */}
             <div className="text-white text-xs font-mono bg-space-800/60 border border-white/10 p-2 rounded-lg backdrop-blur-md shadow-xl min-w-[140px] pointer-events-none select-none">
                 {viewMode === 'orbit' ? (
                     <>

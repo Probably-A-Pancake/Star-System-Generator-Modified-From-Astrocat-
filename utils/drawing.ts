@@ -82,14 +82,14 @@ export function drawSystem3D(ctx: CanvasRenderingContext2D, w: number, h: number
         ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI*2); ctx.clip();
         ctx.drawImage(pl.texture, -size, -size, size*2, size*2);
         
-        // Fresnel / Rim Light (3D Effect)
+        // Fresnel
         const rim = ctx.createRadialGradient(-size*0.3, -size*0.3, size*0.5, 0, 0, size);
         rim.addColorStop(0, "rgba(255,255,255,0.0)");
         rim.addColorStop(0.8, "rgba(0,0,0,0.1)");
         rim.addColorStop(1, "rgba(255,255,255,0.2)");
         ctx.fillStyle = rim; ctx.fillRect(-size, -size, size*2, size*2);
 
-        // Inner Shadow
+        // Shadow
         const grad = ctx.createRadialGradient(-size*0.3, -size*0.3, size*0.2, 0, 0, size);
         grad.addColorStop(0, "transparent"); grad.addColorStop(1, "rgba(0,0,0,0.8)");
         ctx.fillStyle = grad; ctx.fillRect(-size, -size, size*2, size*2);
@@ -125,38 +125,25 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
     ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
     ctx.beginPath(); ctx.arc(cursorX - starR_px + 20, cy, starR_px, 0, Math.PI*2); ctx.fill();
     
-    // Scale star label font slightly but keep it anchored relative to canvas
     const starLabelY = cy + Math.min(h*0.45, starR_px + 40);
     ctx.fillStyle = "#AAA"; ctx.font = "16px Barlow"; ctx.textAlign = "left";
     ctx.fillText("STAR", 10, cy + h*0.45); ctx.fillText((star.radius.toFixed(2)) + " R☉", 10, cy + h*0.45 + 20);
 
-    // Ensure a minimum gap of 50px so planets don't overlap the star slice at low zoom
-    // The star slice ends visually at (original_cursorX + 20)
     cursorX += Math.max(50, 60 * cam.zoom);
 
-    // Calculate dynamic font settings based on zoom
-    const zoomFactor = Math.pow(cam.zoom, 0.45); // Sqrt scaling
-    const titleSize = Math.max(10, Math.min(24, 16 * zoomFactor));
-    const subSize = Math.max(8, Math.min(16, 12 * zoomFactor));
-    const gap = 15 * Math.max(0.6, Math.min(1.5, zoomFactor));
-    const lineHeight = subSize * 1.35;
+    // Font scaling
+    const zoomFactor = Math.pow(cam.zoom, 0.45);
+    const titleSize = Math.max(12, Math.min(24, 16 * zoomFactor));
+    const subSize = Math.max(9, Math.min(14, 11 * zoomFactor));
+    const lineHeight = subSize * 1.4;
 
     system.planets.forEach((pl, i) => {
         const rPx = pl.radiusKm * currentScale;
         
-        // Add spacing relative to planet size + zoom-based padding + minimum padding
-        cursorX += rPx + Math.max(5, 10 * cam.zoom);
-        
-        if(i > 0) {
-             // Minimum spacing between planets
-             cursorX += Math.max(10, 20 * cam.zoom);
-        }
-
         // Draw Planet Texture
         ctx.save();
-        ctx.translate(cursorX, cy);
+        ctx.translate(cursorX + rPx, cy); // Center on planet
         
-        // Render Texture
         ctx.beginPath(); ctx.arc(0, 0, rPx, 0, Math.PI*2); ctx.clip();
         ctx.drawImage(pl.texture, -rPx, -rPx, rPx*2, rPx*2);
         
@@ -169,46 +156,59 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
             ctx.beginPath(); ctx.arc(0, 0, rPx+4, 0, Math.PI*2); ctx.fill();
         }
 
-        // Fresnel / Rim (Scale View)
+        // Rim Light
         const rim = ctx.createRadialGradient(-rPx*0.3, -rPx*0.3, rPx*0.5, 0, 0, rPx);
         rim.addColorStop(0, "rgba(255,255,255,0.0)");
         rim.addColorStop(0.8, "rgba(0,0,0,0.1)");
         rim.addColorStop(1, "rgba(255,255,255,0.3)"); 
         ctx.fillStyle = rim; ctx.fillRect(-rPx, -rPx, rPx*2, rPx*2);
 
-        // Shadow shading
+        // Shadow
         const shadowGrad = ctx.createLinearGradient(-rPx, 0, rPx, 0);
         shadowGrad.addColorStop(0, "rgba(0,0,0,0)"); 
         shadowGrad.addColorStop(0.3, "rgba(0,0,0,0)");
         shadowGrad.addColorStop(1, "rgba(0,0,0,0.9)"); 
+        ctx.fillStyle = shadowGrad; ctx.beginPath(); ctx.arc(0,0,rPx,0,Math.PI*2); ctx.fill();
         
-        ctx.fillStyle = shadowGrad;
-        ctx.beginPath(); ctx.arc(0,0,rPx,0,Math.PI*2); ctx.fill();
-
         ctx.restore();
 
-        // Labels - Dynamic Positioning
-        const textY = cy + rPx + gap;
+        // --- TEXT DATA (To the Right) ---
+        // Position text block starting after the planet
+        const textX = cursorX + rPx * 2 + 15;
+        let textY = cy - rPx; 
+        if (textY < 20) textY = 20; // prevent going off screen top
 
-        ctx.fillStyle = "#BBB"; 
-        ctx.textAlign = "center"; 
+        ctx.textAlign = "left"; 
+        
+        // ID
         ctx.font = `bold ${Math.floor(titleSize)}px Barlow`;
+        ctx.fillStyle = "#BBB";
+        let label = (i < 25) ? String.fromCharCode(98 + i) : "a" + String.fromCharCode(97 + (i - 25)%26);
+        ctx.fillText(label, textX, textY);
         
-        let label = "";
-        if (i < 25) {
-            label = String.fromCharCode(98 + i);
-        } else {
-            const sub = i - 25;
-            label = "a" + String.fromCharCode(97 + sub%26); 
-        }
-
-        ctx.fillText(label, cursorX, textY);
-        
-        ctx.font = `${Math.floor(subSize)}px Barlow`; 
+        // Data Lines
+        ctx.font = `${Math.floor(subSize)}px Barlow`;
         ctx.fillStyle = "#888";
-        ctx.fillText(Math.round(pl.radiusKm).toLocaleString() + " km", cursorX, textY + lineHeight);
-        ctx.fillText(pl.radius.toFixed(2) + " R⊕", cursorX, textY + lineHeight * 2);
+        
+        const periodYr = Math.sqrt(Math.pow(pl.a, 3) / star.mass);
+        const periodStr = periodYr < 1 ? (periodYr * 365.25).toFixed(1) + " days" : periodYr.toFixed(2) + " yr";
 
-        cursorX += rPx;
+        const lines = [
+            `${Math.round(pl.radiusKm).toLocaleString()} km`,
+            `${pl.mass.toFixed(2)} M⊕`,
+            `Orbit: ${pl.a.toFixed(2)} AU`,
+            `Period: ${periodStr}`,
+            `Temp: ${pl.temp.toFixed(0)} K`
+        ];
+
+        let lineY = textY + lineHeight;
+        lines.forEach(line => {
+            ctx.fillText(line, textX, lineY);
+            lineY += lineHeight;
+        });
+
+        // Advance cursor past planet + text block width (approx 100-150px depending on zoom)
+        const blockWidth = 90 * zoomFactor; 
+        cursorX += (rPx * 2) + blockWidth + Math.max(30, 40 * cam.zoom);
     });
 }

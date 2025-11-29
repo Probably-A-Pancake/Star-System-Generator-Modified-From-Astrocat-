@@ -1,3 +1,4 @@
+
 import { Composition, Planet, Star, SystemData } from '../types';
 import { randomUniform, randomBetaProxy, erfinv, fbm, lerp } from './math';
 
@@ -278,9 +279,7 @@ export function generateStar(targetClass?: string): Star {
     let mass = 101;
     
     if (targetClass && targetClass !== 'Random') {
-        // Approximate mass ranges for main sequence stars
         switch(targetClass) {
-            // Skew O type heavily towards the lower end (16-20) to keep luminosity reasonable
             case 'O': mass = 16 + randomBetaProxy(6) * (60 - 16); break;
             case 'B': mass = randomUniform(2.1, 16); break;
             case 'A': mass = randomUniform(1.4, 2.1); break;
@@ -299,10 +298,9 @@ export function generateStar(targetClass?: string): Star {
     }
 
     let luminosity, radius;
-    // Smoothed luminosity calculation to prevent massive jump at mass=20
     if (mass < 0.43) luminosity = 0.23 * Math.pow(mass, 2.3);
     else if (mass < 2) luminosity = Math.pow(mass, 4);
-    else if (mass < 50) luminosity = 1.4 * Math.pow(mass, 3.5); // Extended range for power law
+    else if (mass < 50) luminosity = 1.4 * Math.pow(mass, 3.5);
     else luminosity = 32000 * mass;
 
     if (mass < 1) radius = Math.pow(mass, 0.9);
@@ -329,7 +327,6 @@ function createPlanet(star: Star, orbit: {a:number, e:number, i:number}, frostLi
         type = forcedType;
     } else {
         const rand = Math.random();
-        // Strict Habitable Zone Check
         const inHabitableZone = a >= hzIn && a <= hzOut;
         
         if (inHabitableZone) {
@@ -337,20 +334,17 @@ function createPlanet(star: Star, orbit: {a:number, e:number, i:number}, frostLi
             else if (rand < 0.99) type = "Mini-Neptune";
             else type = "Gas Giant"; 
         } else if (a > frostLine) {
-            // Outer System - Reduced chances of Terrestrial past snow line
             if (rand < 0.40) type = "Gas Giant";
             else if (rand < 0.75) type = "Ice Giant";
             else if (rand < 0.98) type = "Mini-Neptune";
-            else type = "Terrestrial"; // ~2% chance
+            else type = "Terrestrial"; 
         } else {
-            // Inner System
             if (rand < 0.03) type = "Gas Giant";
             else if (rand < 0.08) type = "Ice Giant";
             else if (rand < 0.25) type = "Mini-Neptune";
             else type = "Terrestrial";
         }
 
-        // Low Mass Star Logic 
         if (star.mass < 0.5 && type === "Gas Giant") {
             const downgrade = Math.random();
             if (downgrade < 0.5) type = "Mini-Neptune";
@@ -468,12 +462,6 @@ export function generatePlanets(star: Star): SystemData {
     let targetCount = 0;
     const roll = Math.random();
 
-    // Probability buckets:
-    // > 35 planets: 0.5% (roll < 0.005)
-    // > 20 planets: 5% total -> so 20-35 range is 4.5% (roll < 0.05)
-    // > 10 planets: 35% total -> so 10-20 range is 30% (roll < 0.35)
-    // <= 10 planets: 65% total (roll >= 0.35)
-
     if (roll < 0.005) { 
         targetCount = Math.floor(randomUniform(35, 45));
     } else if (roll < 0.05) { 
@@ -484,10 +472,8 @@ export function generatePlanets(star: Star): SystemData {
         targetCount = Math.floor(randomUniform(0, 10));
     }
     
-    // Metallicity adjustment
     targetCount += Math.round(star.metallicity * 4);
     
-    // Mass Constraint: Red dwarfs rarely host massive systems in this sim
     if (star.mass < 0.5) {
         targetCount = Math.min(targetCount, 12); 
     }
@@ -501,7 +487,6 @@ export function generatePlanets(star: Star): SystemData {
     const hzOut = 1.5 * Math.sqrt(star.luminosity); 
 
     let rawOrbits: number[] = [];
-    // Ensure we generate enough raw orbits to pick from even for large systems
     for(let i=0; i<targetCount * 5; i++) {
         const a = Math.exp(randomUniform(Math.log(0.05), Math.log(80))); 
         rawOrbits.push(a);
@@ -515,36 +500,27 @@ export function generatePlanets(star: Star): SystemData {
 
     for (let i = 0; i < rawOrbits.length; i++) {
         const candidate = rawOrbits[i];
-
-        // Check stability with previous
         if (stableOrbits.length > 0) {
             if (candidate < stableOrbits[stableOrbits.length - 1] * 1.35) continue;
         }
-
-        // Check hot limit (Temp > 373K)
         if (candidate < hotLimit) {
             if (currentHot >= maxHot) continue;
             currentHot++;
         }
-
         stableOrbits.push(candidate);
         if (stableOrbits.length >= targetCount) break;
     }
 
-    // Guarantee planets outside Inner HZ
     const minOuter = targetCount > 10 ? 2 : 1;
     if (stableOrbits.length >= minOuter) {
         let count = 0;
         for (const orb of stableOrbits) if (orb >= hzIn) count++;
         
         if (count < minOuter) {
-            // Force the outer N planets to be >= hzIn
             const startIndex = stableOrbits.length - minOuter;
-            
             if (stableOrbits[startIndex] < hzIn) {
                 stableOrbits[startIndex] = hzIn * 1.05;
             }
-            
             for (let k = startIndex + 1; k < stableOrbits.length; k++) {
                 if (stableOrbits[k] < stableOrbits[k-1] * 1.35) {
                     stableOrbits[k] = stableOrbits[k-1] * 1.35;
@@ -561,22 +537,17 @@ export function generatePlanets(star: Star): SystemData {
 
     let planets: Planet[] = orbitParams.map(orbit => createPlanet(star, orbit, frostLine, hzIn, hzOut));
 
-    // Hard minimum terrestrial floor (30%) for large systems
     if (planets.length > 7) {
         let tCount = planets.filter(p => p.type === 'Terrestrial').length;
         const minTerrestrial = Math.ceil(planets.length * 0.3);
         
         if (tCount < minTerrestrial) {
             let toConvert = minTerrestrial - tCount;
-            // Pick random non-terrestrial planets to convert
             const candidates = planets.map((p, i) => ({p, i})).filter(x => x.p.type !== 'Terrestrial');
-            
-            // Shuffle
             for (let i = candidates.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
             }
-            
             for (let k = 0; k < toConvert && k < candidates.length; k++) {
                 const index = candidates[k].i;
                 const orbit = { a: planets[index].a, e: planets[index].e, i: planets[index].i };
