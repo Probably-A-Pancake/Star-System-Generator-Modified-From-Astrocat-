@@ -18,3 +18,9 @@ View your app in AI Studio: https://ai.studio/apps/drive/1UaWstb6PMPcatdd6tc8VP1
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+   ## Features Added
+   - Drop down menu to choose planet amount
+   - Naming system according to God's of different cultures
+   - 100X and 0.05X zoom
+   - Star class picker
