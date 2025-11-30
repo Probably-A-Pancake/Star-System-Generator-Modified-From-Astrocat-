@@ -102,12 +102,14 @@ const Visualizer: React.FC<VisualizerProps> = ({
     if (viewMode === 'orbit') {
         setOrbitCam(prev => ({
             ...prev,
-            zoom: Math.max(2, Math.min(1200, prev.zoom * delta))
+            // 20 units = 1x. Range: 1 (0.05x) to 2000 (100x)
+            zoom: Math.max(1, Math.min(2000, prev.zoom * delta))
         }));
     } else {
         setScaleCam(prev => ({
             ...prev,
-            zoom: Math.max(0.1, Math.min(60, prev.zoom * delta))
+            // Range: 0.05x to 100x
+            zoom: Math.max(0.05, Math.min(100, prev.zoom * delta))
         }));
     }
   };

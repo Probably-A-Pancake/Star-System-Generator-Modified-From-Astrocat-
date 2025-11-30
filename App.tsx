@@ -10,22 +10,30 @@ function App() {
   const [system, setSystem] = useState<SystemData | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('orbit');
   const [targetClass, setTargetClass] = useState<string>('Random');
+  const [planetDensity, setPlanetDensity] = useState<string>('Medium');
 
   const [orbitCam, setOrbitCam] = useState<CameraOrbit>({ zoom: 20, rotX: 60, rotZ: 0 });
   const [scaleCam, setScaleCam] = useState<CameraScale>({ zoom: 1.0, panX: 0 });
 
-  const generateSystem = (cls?: string) => {
+  const generateSystem = (cls?: string, density?: string) => {
     const selectedClass = cls || targetClass;
+    const selectedDensity = density || planetDensity;
     const newStar = generateStar(selectedClass === 'Random' ? undefined : selectedClass);
-    const newSystem = generatePlanets(newStar);
+    const newSystem = generatePlanets(newStar, selectedDensity);
     setStar(newStar);
     setSystem(newSystem);
   };
 
   const handleClassSelect = (cls: string) => {
       setTargetClass(cls);
-      generateSystem(cls);
+      generateSystem(cls, planetDensity);
   };
+  
+  const handleDensityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newDensity = e.target.value;
+      setPlanetDensity(newDensity);
+      generateSystem(targetClass, newDensity);
+  }
 
   useEffect(() => {
     generateSystem();
@@ -34,6 +42,13 @@ function App() {
   if (!star || !system) return <div className="w-full h-screen bg-black text-white flex items-center justify-center font-mono">Initializing Astrophysics Simulation...</div>;
 
   const classes = ['Random', 'O', 'B', 'A', 'F', 'G', 'K', 'M'];
+  const densities = [
+      { id: 'None', label: 'None (0)' },
+      { id: 'Low', label: 'Low (<5)' },
+      { id: 'Medium', label: 'Medium (<12)' },
+      { id: 'High', label: 'High (<30)' },
+      { id: 'Extreme', label: 'Extreme (∞)' },
+  ];
 
   const getClassColor = (c: string) => {
       if(c === 'Random') return 'text-white border-white/20';
@@ -48,7 +63,7 @@ function App() {
       <div className="flex-1 relative flex flex-col h-[60vh] md:h-full min-h-0">
         
         {/* Top Left Controls & HUD Container */}
-        <div className="absolute top-4 left-6 z-30 flex flex-col gap-1 items-start">
+        <div className="absolute top-4 left-6 z-30 flex flex-col gap-2 items-start">
             
             {/* Star Class Selector */}
             <div className="flex gap-1 bg-space-800/90 backdrop-blur p-1 rounded-lg border border-space-700 shadow-xl">
@@ -63,8 +78,22 @@ function App() {
                 ))}
             </div>
 
+            {/* Density Selector */}
+            <div className="flex items-center gap-2 bg-space-800/90 backdrop-blur p-1.5 rounded-lg border border-space-700 shadow-xl">
+                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-2">Density</span>
+                 <select 
+                    value={planetDensity}
+                    onChange={handleDensityChange}
+                    className="bg-space-900 text-xs font-bold text-white border border-space-700 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                 >
+                     {densities.map(d => (
+                         <option key={d.id} value={d.id}>{d.label}</option>
+                     ))}
+                 </select>
+            </div>
+
             {/* HUD Info */}
-            <div className="text-white text-xs font-mono bg-space-800/60 border border-white/10 p-2 rounded-lg backdrop-blur-md shadow-xl min-w-[140px] pointer-events-none select-none">
+            <div className="text-white text-xs font-mono bg-space-800/60 border border-white/10 p-2 rounded-lg backdrop-blur-md shadow-xl min-w-[140px] pointer-events-none select-none mt-1">
                 {viewMode === 'orbit' ? (
                     <>
                     <div className="text-[10px] font-bold text-blue-400 mb-1 uppercase tracking-widest">Orbital View</div>
@@ -114,7 +143,7 @@ function App() {
         {/* Generate Button */}
         <div className="absolute bottom-6 left-6 z-20">
             <button 
-                onClick={() => generateSystem()}
+                onClick={() => generateSystem(targetClass, planetDensity)}
                 className="group relative px-6 py-3 bg-white text-black font-bold uppercase tracking-widest text-sm rounded hover:bg-blue-400 transition-colors shadow-xl shadow-white/10"
             >
                 Generate New System

@@ -469,23 +469,45 @@ function createPlanet(star: Star, orbit: {a:number, e:number, i:number}, frostLi
     return pObj;
 }
 
-export function generatePlanets(star: Star): SystemData {
+export function generatePlanets(star: Star, density: string = 'Medium'): SystemData {
     let targetCount = 0;
-    const roll = Math.random();
+    
+    // Density logic
+    switch(density) {
+        case 'None':
+            targetCount = 0;
+            break;
+        case 'Low':
+            // At most 5
+            targetCount = Math.floor(randomUniform(1, 6)); 
+            break;
+        case 'Medium':
+            // At most 12
+            targetCount = Math.floor(randomUniform(4, 13)); 
+            break;
+        case 'High':
+            // At most 30
+            targetCount = Math.floor(randomUniform(12, 31)); 
+            break;
+        case 'Extreme':
+            // Uncapped / High density
+            targetCount = Math.floor(randomUniform(25, 55)); 
+            break;
+        default:
+            targetCount = Math.floor(randomUniform(3, 15));
+            break;
+    }
 
-    if (roll < 0.005) { 
-        targetCount = Math.floor(randomUniform(35, 45));
-    } else if (roll < 0.05) { 
-        targetCount = Math.floor(randomUniform(20, 35));
-    } else if (roll < 0.35) { 
-        targetCount = Math.floor(randomUniform(10, 20));
-    } else {
-        targetCount = Math.floor(randomUniform(0, 10));
+    if (density !== 'None') {
+        targetCount += Math.round(star.metallicity * 4);
+        
+        // Apply hard caps requested
+        if (density === 'Low') targetCount = Math.min(targetCount, 5);
+        if (density === 'Medium') targetCount = Math.min(targetCount, 12);
+        if (density === 'High') targetCount = Math.min(targetCount, 30);
     }
     
-    targetCount += Math.round(star.metallicity * 4);
-    
-    if (star.mass < 0.5) {
+    if (star.mass < 0.5 && density !== 'Extreme') {
         targetCount = Math.min(targetCount, 12); 
     }
     
