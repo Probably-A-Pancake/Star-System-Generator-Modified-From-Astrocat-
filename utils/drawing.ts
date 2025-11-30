@@ -94,6 +94,16 @@ export function drawSystem3D(ctx: CanvasRenderingContext2D, w: number, h: number
         grad.addColorStop(0, "transparent"); grad.addColorStop(1, "rgba(0,0,0,0.8)");
         ctx.fillStyle = grad; ctx.fillRect(-size, -size, size*2, size*2);
         ctx.restore();
+
+        // Name Label (Top of Planet)
+        // Scale text inversely with zoom so it doesn't get huge
+        const labelSize = Math.max(10, Math.min(16, 200 / cam.zoom));
+        if (labelSize > 6) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.font = `${labelSize}px Barlow`;
+            ctx.textAlign = "center";
+            ctx.fillText(pl.name, pos.x, pos.y - size - 4);
+        }
     });
 
     // Star
@@ -127,7 +137,7 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
     
     const starLabelY = cy + Math.min(h*0.45, starR_px + 40);
     ctx.fillStyle = "#AAA"; ctx.font = "16px Barlow"; ctx.textAlign = "left";
-    ctx.fillText("STAR", 10, cy + h*0.45); ctx.fillText((star.radius.toFixed(2)) + " R☉", 10, cy + h*0.45 + 20);
+    ctx.fillText(star.name, 10, cy + h*0.45); ctx.fillText((star.radius.toFixed(2)) + " R☉", 10, cy + h*0.45 + 20);
 
     cursorX += Math.max(50, 60 * cam.zoom);
 
@@ -180,11 +190,11 @@ export function drawSystemScale(ctx: CanvasRenderingContext2D, w: number, h: num
 
         ctx.textAlign = "left"; 
         
-        // ID
+        // ID + Name
         ctx.font = `bold ${Math.floor(titleSize)}px Barlow`;
         ctx.fillStyle = "#BBB";
         let label = (i < 25) ? String.fromCharCode(98 + i) : "a" + String.fromCharCode(97 + (i - 25)%26);
-        ctx.fillText(label, textX, textY);
+        ctx.fillText(`${label} (${pl.name})`, textX, textY);
         
         // Data Lines
         ctx.font = `${Math.floor(subSize)}px Barlow`;

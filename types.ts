@@ -13,6 +13,7 @@ export interface Composition {
 }
 
 export interface Planet {
+  name: string;      // Name of the planet
   a: number;         // Semi-major axis (AU)
   e: number;         // Eccentricity
   i: number;         // Inclination (degrees)
@@ -31,6 +32,7 @@ export interface Planet {
 }
 
 export interface Star {
+  name: string;      // Catalog name
   mass: number;      // Solar masses
   radius: number;    // Solar radii
   luminosity: number;// Solar luminosity

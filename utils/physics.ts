@@ -1,6 +1,7 @@
 
 import { Composition, Planet, Star, SystemData } from '../types';
 import { randomUniform, randomBetaProxy, erfinv, fbm, lerp } from './math';
+import { applySystemNaming, generateStarName } from './names';
 
 function normalizeComp(c: Composition): Composition {
     const sum = c.fe + c.si + c.h2o + c.h;
@@ -314,7 +315,16 @@ export function generateStar(targetClass?: string): Star {
     const temp = 5778 * Math.pow(l_adj / (r_adj * r_adj), 0.25);
     const absMag = 4.74 - 2.5 * Math.log10(l_adj);
 
-    return { mass, radius: r_adj, luminosity: l_adj, temp, metallicity: z_feh, absMag, spectralClass: getSpectralClass(temp) };
+    return { 
+        mass, 
+        radius: r_adj, 
+        luminosity: l_adj, 
+        temp, 
+        metallicity: z_feh, 
+        absMag, 
+        spectralClass: getSpectralClass(temp),
+        name: generateStarName() 
+    };
 }
 
 function createPlanet(star: Star, orbit: {a:number, e:number, i:number}, frostLine: number, hzIn: number, hzOut: number, forcedType?: Planet['type']): Planet {
@@ -448,6 +458,7 @@ function createPlanet(star: Star, orbit: {a:number, e:number, i:number}, frostLi
     }
 
     const pObj: Planet = {
+        name: "", // Will be filled later
         a, e: ecc, i: inc, mass, radius: radius_earth, radiusKm: radius_km,
         density, type, comp, color, pressure, temp: surfaceTemp,
         anomaly: Math.random() * Math.PI * 2, lan: Math.random() * Math.PI * 2,
@@ -555,6 +566,8 @@ export function generatePlanets(star: Star): SystemData {
             }
         }
     }
+
+    applySystemNaming(star, planets);
 
     return { planets, frostLine };
 }

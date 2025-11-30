@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { Star, SystemData, Planet } from '../types';
 import { kelvinToRGB } from '../utils/drawing';
@@ -77,6 +78,12 @@ const DataPanel: React.FC<DataPanelProps> = ({ star, system }) => {
     return "a" + String.fromCharCode(97 + sub % 26);
   };
 
+  const getPressureDisplay = (p: Planet) => {
+    if (['Gas Giant', 'Ice Giant', 'Mini-Neptune'].includes(p.type)) return "> 1000";
+    if (p.pressure < 0.01) return "< 0.01";
+    return p.pressure.toFixed(2);
+  };
+
   return (
     <div className="flex flex-col h-full bg-space-900 border-l border-space-700 w-full md:w-[450px] shrink-0 overflow-y-auto">
       {/* Star Header */}
@@ -84,9 +91,10 @@ const DataPanel: React.FC<DataPanelProps> = ({ star, system }) => {
         <div className="flex justify-between items-start mb-4">
             <div>
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Stellar Object</h2>
+                <div className="text-2xl font-bold text-white mt-1">{star.name}</div>
                 <div className="flex items-baseline gap-2 mt-1">
-                    <span className={`text-3xl font-bold ${getClassColor(star.spectralClass)}`}>{star.spectralClass}</span>
-                    <span className="text-2xl text-white font-light">Main Sequence</span>
+                    <span className={`text-xl font-bold ${getClassColor(star.spectralClass)}`}>{star.spectralClass}-Type</span>
+                    <span className="text-lg text-white font-light">Main Sequence</span>
                 </div>
             </div>
             <div className="text-right">
@@ -141,24 +149,29 @@ const DataPanel: React.FC<DataPanelProps> = ({ star, system }) => {
              <table className="w-full text-left border-collapse">
                  <thead>
                     <tr className="text-[10px] uppercase text-gray-500 border-b border-space-700 bg-space-900">
-                        <th className="p-3 font-semibold">Id</th>
+                        <th className="p-3 font-semibold">Name</th>
                         <th className="p-3 font-semibold">Type</th>
                         <th className="p-3 font-semibold text-right">Mass (M⊕)</th>
                         <th className="p-3 font-semibold text-right">Orbit (AU)</th>
+                        <th className="p-3 font-semibold text-right">Press. (atm)</th>
                         <th className="p-3 font-semibold text-right">Temp (K)</th>
                         <th className="p-3 font-semibold text-center">Comp</th>
                     </tr>
                  </thead>
                  <tbody>
                     {system.planets.length === 0 ? (
-                        <tr><td colSpan={6} className="p-8 text-center text-gray-500 italic">No planetary bodies detected.</td></tr>
+                        <tr><td colSpan={7} className="p-8 text-center text-gray-500 italic">No planetary bodies detected.</td></tr>
                     ) : system.planets.map((p, i) => {
                         return (
                             <tr key={i} className="border-b border-space-700 hover:bg-white/5 transition-colors group">
-                                <td className="p-3 text-blue-300 font-bold group-hover:text-blue-200">{getPlanetLabel(i)}</td>
+                                <td className="p-3 font-bold group-hover:text-blue-200">
+                                    <span className="text-blue-300 mr-2">{getPlanetLabel(i)}</span>
+                                    <span className="text-gray-300 text-xs font-normal">{p.name}</span>
+                                </td>
                                 <td className="p-3 text-xs text-gray-400">{p.type}</td>
                                 <td className="p-3 text-xs text-white font-mono text-right">{p.mass.toFixed(2)}</td>
                                 <td className="p-3 text-xs text-yellow-100 font-mono text-right font-bold">{p.a.toFixed(2)}</td>
+                                <td className="p-3 text-xs text-gray-400 font-mono text-right">{getPressureDisplay(p)}</td>
                                 <td className={`p-3 text-xs text-right font-mono font-bold ${p.temp >= 240 && p.temp <= 373 ? 'text-green-400' : p.temp < 273 ? 'text-blue-300' : 'text-red-300'}`}>
                                     {p.temp.toFixed(0)}
                                 </td>
